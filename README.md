@@ -23,6 +23,38 @@ It replaces a game's own upscaler (DLSS, FSR 2/3 or XeSS) with **FSR 4**, which 
   <br><sub>Bright Memory: Infinite on Retroid Pocket 6, 640×360 → 1920×1080 (click for full size).</sub>
 </p>
 
+## Launcher games test build (this fork)
+
+> [!NOTE]
+> This fork adds Vela for **non-Steam shortcuts made by a launcher** (Heroic, Xodus Nexus, a store client in a Proton
+> prefix). It is proposed upstream in [#3](https://github.com/zrprod9-cmyk/vela/pull/3),
+> [#4](https://github.com/zrprod9-cmyk/vela/pull/4) and [#5](https://github.com/zrprod9-cmyk/vela/pull/5). Until it is
+> merged there you can try it as a small add-on to the official release. It is a test build.
+
+Everything else comes from the main repository: this fork ships **only the plugin files it changes** (six Python files
+and the panel), no OptiScaler, no NPU part.
+
+1. Install **Vela 0.8.22** from the [main repository](https://github.com/zrprod9-cmyk/vela/releases/tag/v0.8.22), and its
+   NPU part if you want FSR 4 on the NPU, exactly as [Install](#install) below says.
+2. In Desktop mode, open Konsole and run:
+
+   ```sh
+   curl -fsSL https://github.com/indiesaudi/vela/releases/download/v0.8.22-launcher-games/vela-launcher-games-0.8.22.tar.gz | tar xz -C /tmp && sh /tmp/vela-launcher-games/install.sh
+   ```
+
+   It checks that the installed Vela is a stock 0.8.22, keeps the original files in `~/vela-backup-launcher-games`, and
+   changes nothing otherwise.
+3. Reload Vela: Quick Access → Decky → gear → Plugins → Vela → **Reload** (or restart the handheld).
+
+Then, for a launcher's game: **start it once from its Steam shortcut and open Vela while the game runs.** Vela finds the
+game, and from then on it works like a Steam game. Start launcher games from Steam with the launcher closed.
+
+To go back: set every launcher game to **Off** in the panel, run `sh /tmp/vela-launcher-games/uninstall.sh` (download it
+again if `/tmp` was cleared), and reload Vela. Installing a newer official Vela also replaces this build.
+
+Tested on one Snapdragon 8 Elite handheld with Xodus Nexus, Heroic and Ubisoft Connect; see the pull requests for what
+was and was not tested. The add-on is built by [`launcher-build/make_overlay.py`](launcher-build/make_overlay.py).
+
 ## Features
 
 | | |
