@@ -29,7 +29,7 @@ RX_WINDOWS_DIR = re.compile(r"[\\/]windows[\\/]", re.I)
 # programs that come with a game or a launcher and are never the game
 RX_HELPER = re.compile(r"(crash|handler|report|webcore|webhelper|helper|launcher|^upc|xalia|^umu|setup|redist|unins|overlay|"
                        r"service|updater|bootstrap|easyanticheat|battleye|cefprocess|subprocess)[^\\/]*\.exe$", re.I)
-ENV_KEYS = (b"SteamAppId", b"WINEPREFIX", b"STEAM_COMPAT_DATA_PATH")
+ENV_KEYS = (b"SteamAppId", b"SteamGameId", b"STEAM_COMPAT_APP_ID", b"WINEPREFIX", b"STEAM_COMPAT_DATA_PATH")
 MAX_DEPTH = 6
 MAX_ENTRIES = 40000
 PE_MACHINES = {0x8664: "x64", 0x014C: "x86", 0xAA64: "arm64"}
@@ -192,6 +192,17 @@ def prefix_of(env):
     return None
 
 
+def run_id(env):
+    """The id Vela's library inside the game reads its live settings by (fork patch 0010, VelaLive.h Path): the first of
+    these variables that starts with a digit. A launcher's runtime may set it to something else than the shortcut's appid
+    (Heroic: SteamAppId=0)."""
+    for key in ("SteamAppId", "SteamGameId", "STEAM_COMPAT_APP_ID"):
+        value = env.get(key) or ""
+        if value[:1].isdigit():
+            return value
+    return None
+
+
 def observe(appid, proc="/proc", own_dirs=(), uid=None):
     """What runs for this shortcut now.
 
@@ -225,7 +236,7 @@ def observe(appid, proc="/proc", own_dirs=(), uid=None):
     if rel is None:
         return {"status": "none"}
     return {"status": "found", "certain": certain, "handoff": g["launch"] != appid, "install_dir": install, "exe": rel,
-            "exe_name": g["exe"], "running_exe": running,
+            "exe_name": g["exe"], "running_exe": running, "run_id": run_id(g["env"]),
             "machine": pe_machine(running) if running else pe_machine(os.path.join(install, rel)),
             "prefix": prefix_of(g["env"])}
 
@@ -295,7 +306,7 @@ class Store:
         if old and old.get("launcher") and old.get("sig") in (None, sig):
             return None
         new = {"install_dir": obs["install_dir"], "exe": obs["exe"], "prefix": obs.get("prefix"),
-               "machine": obs.get("machine"), "confirmed": bool(obs.get("certain")), "launcher": False, "sig": sig,
+               "machine": obs.get("machine"), "run_id": obs.get("run_id"), "confirmed": bool(obs.get("certain")), "launcher": False, "sig": sig,
                "markers": sorted(markers) if markers is not None else None, "at": int(time.time())}
         if old and old.get("install_dir") and old.get("sig") in (None, sig):
             same = os.path.realpath(old["install_dir"]) == os.path.realpath(new["install_dir"])
@@ -303,7 +314,7 @@ class Store:
                 new["confirmed"] = new["confirmed"] or bool(old.get("confirmed"))
                 if new["markers"] is None:
                     new["markers"] = old.get("markers")
-                if all(old.get(k) == new[k] for k in ("exe", "prefix", "machine", "confirmed", "markers")):
+                if all(old.get(k) == new[k] for k in ("exe", "prefix", "machine", "confirmed", "markers", "run_id")):
                     return old
             elif not obs.get("certain") and os.path.isdir(old["install_dir"]):
                 # no id of its own, and now a second game folder while the first is still there: a launcher's window

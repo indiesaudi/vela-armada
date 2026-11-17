@@ -163,6 +163,7 @@ class Plugin:
                     await self._step(self.nofg.reconcile, running)
                 # V04 (audit 2026-11-09): the live files in /tmp again when something removed them while the plugin runs
                 await self._step(self.live.ensure)
+                await self._step(self._mirror_live, running)
                 if self.up.reset_pending:  # Gamescope was not up at plugin start
                     await self._step(self.up.restore_steam_filter)
                 # V14 (audit 2026-11-09): the full check of a closed set-up game (the last run's log kept, every kit file
@@ -344,6 +345,7 @@ class Plugin:
                     # the launcher keeps the exe encrypted on disk: the graphics API is read from the copy that runs
                     markers = self.check.reader(obs["running_exe"])
                 store.record(appid, obs, sig=sig, markers=markers)
+                self._mirror_live(running)
             elif obs["status"] == "other":
                 store.record(appid, obs, sig=sig)
             else:
@@ -356,6 +358,20 @@ class Plugin:
         except Exception as e:  # never in the way of the panel
             decky.logger.error(f"learn {appid}: {e}")
             return None
+
+    def _mirror_live(self, running):
+        """A running launcher game whose runtime hides the shortcut's appid (learn.py run_id; Heroic: SteamAppId=0) gets
+        its live settings under the id it reads them by, with the panel closed too; the copy goes when the game stops."""
+        on = set()
+        for appid in running:
+            if not sgsr3.is_shortcut(appid):
+                continue
+            e = self.s3.learned.entry(appid) or {}
+            rid = e.get("run_id")
+            if e.get("install_dir") and rid and rid != str(appid) and self.live.get(appid):
+                self.live.mirror(appid, rid)
+                on.add(str(appid))
+        self.live.unmirror(keep=on)
 
     def _game_state(self, appid, window=None, launch=None):
         """window: Steam's resolution override for the game as the panel read it (GetResolutionOverrideForApp; None = not
