@@ -60,8 +60,8 @@ Hi-Fi RUSH (Nexus) and Ghostrunner (Heroic) running FSR 4 on the NPU, eleven lau
 restoring game folders exactly.
 
 Not tested: Snapdragon 8 Gen 2 devices, flatpak or AppImage builds of Heroic, Lutris, Bottles, a launcher's
-verify/repair or a game update with Vela on. The install script was tested on a copy of a 0.8.22 plugin folder, not yet
-on a handheld. Details are in the pull requests.
+verify/repair or a game update with Vela on. The install and uninstall scripts were run on that handheld against a
+copy of a stock 0.8.22 plugin folder. Details are in the pull requests.
 
 ## Source and licence
 
