@@ -280,6 +280,39 @@ FG_TU_ENV = "TU_AUTOTUNE_FLAGS=preempt_optimize"
 ALGO_ENV = {"v1f": None, "v1": V1_ENV, "student": STUDENT_ENV}
 OUR_TOKENS = (DLL_OVERRIDE, STUDENT_ENV, V1_ENV, FG_ENV, FG_TU_ENV) + profiles.ENV_TOKENS + profiles.EXTRA_ENV_TOKENS
 DX12_ARG = "-dx12"
+# Unreal reads its graphics API from the user's Engine.ini too: for a launcher's game, where a launch argument cannot
+# reach the game (it would go to the launcher), this is how Vela asks for DirectX 12 (seen with Ghostrunner under Heroic,
+# 2026-11-16: started in DX11 with -dx12 on the launcher's command line, in DX12 with this key)
+UE_RHI = {"section": "/Script/WindowsTargetPlatform.WindowsTargetSettings",
+          "keys": {"DefaultGraphicsRHI": "DefaultGraphicsRHI_DX12"}}
+UE_CONFIG_DIRS = ("WindowsNoEditor", "Windows", "WindowsClient")
+
+
+def ue_engine_ini(prefix, exe):
+    """The Engine.ini an Unreal game reads its own settings from in a Wine prefix:
+    <prefix>/drive_c/users/<user>/AppData/Local/<Project>/Saved/Config/<Windows...>/Engine.ini, the project named by the
+    exe (<Project>-Win64-Shipping.exe). None when the game has not made that folder (it never ran) or names it otherwise."""
+    project = re.sub(r"-(win64|wingdk)-shipping\.exe$", "", exe or "", flags=re.I)
+    if not prefix or not project or project == exe:
+        return None
+    users = os.path.join(prefix, "drive_c", "users")
+    try:
+        names = sorted(os.listdir(users))
+    except OSError:
+        return None
+    for user in names:
+        local = os.path.join(users, user, "AppData", "Local")
+        try:
+            match = next((n for n in os.listdir(local) if n.lower() == project.lower()), None)
+        except OSError:
+            continue
+        if not match:
+            continue
+        for sub in UE_CONFIG_DIRS:
+            d = os.path.join(local, match, "Saved", "Config", sub)
+            if os.path.isfile(os.path.join(d, "GameUserSettings.ini")) or os.path.isfile(os.path.join(d, "Engine.ini")):
+                return os.path.join(d, "Engine.ini")
+    return None
 # 0.8.17: the panel could not read Steam's launch options: nothing is set up or undone on a guess
 NOT_READ = "Steam did not give this game's launch options, nothing was changed: try again"
 # 0.8.15: Bright Memory: Infinite (1178830): a game's own Steam launch entries (appinfo: config/launch/<n>/
@@ -1225,6 +1258,21 @@ class Sgsr3:
         self.cache[appid] = (time.time(), res)
         return res
 
+    @staticmethod
+    def _launcher_game(sc):
+        """The game is started by a launcher, not by Steam's own Proton (a learned shortcut that is no Windows exe)."""
+        return (sc.get("learned") or {}).get("by_steam") is False
+
+    def dx12_cfg(self, appid):
+        """The settings-file entry (gamecfg) that makes a launcher's Unreal game start in DirectX 12, or None."""
+        sc = self.scan(appid)
+        if not self._launcher_game(sc) or sc.get("engine") != "Unreal":
+            return None
+        path = ue_engine_ini(sc["learned"].get("prefix"), sc.get("exe"))
+        if not path:
+            return None
+        return {"root": "abs", "file": path, "format": "ini", "add": True, **UE_RHI}
+
     def _learned_game(self, appid, root):
         """(learned entry, shortcut) when the shortcut's game is known from a running launch, else None. A shortcut
         straight to the game's own exe needs no learning: its folder is found from shortcuts.vdf as before."""
@@ -2038,7 +2086,9 @@ class Sgsr3:
             # "game" ratio: the fork takes amax from the real sizes itself
             amax = [f"OPTI_SGSR3_AMAX={amax_str(clean['ratio'])}"] \
                 if AMAX_BY_RATIO and clean["algo"] == "student" and clean["ratio"] != "game" else []
-            new_launch, rec = launch_build(launch_options, rec, clean["algo"], sc["engine"] == "Unreal",
+            # a launcher's game: -dx12 on Steam's options would go to the launcher, not the game (dx12_cfg sets it)
+            new_launch, rec = launch_build(launch_options, rec, clean["algo"],
+                                           sc["engine"] == "Unreal" and not self._launcher_game(sc),
                                            profiles.env_tokens(appid) + amax +
                                            (smooth_env(clean["smooth"]) if clean["algo"] == "v1f" else []),
                                            bool(self.api_args(appid)))

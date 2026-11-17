@@ -359,6 +359,11 @@ class Plugin:
             decky.logger.error(f"learn {appid}: {e}")
             return None
 
+    def _game_cfg(self, appid):
+        """The settings-file entries of a game Vela is on in: its profile's, and DirectX 12 for a launcher's Unreal game."""
+        out = gamecfg.entries(profiles.game_cfg(appid)) + gamecfg.entries(self.s3.dx12_cfg(appid))
+        return out or None
+
     def _mirror_live(self, running):
         """A running launcher game whose runtime hides the shortcut's appid (learn.py run_id; Heroic: SteamAppId=0) gets
         its live settings under the id it reads them by, with the panel closed too; the copy goes when the game stops."""
@@ -415,7 +420,7 @@ class Plugin:
                     decky.logger.exception("report: run end")
             # 0.8.16: the profile's game settings (its upscaler on, the output at the full screen) in a game that is
             # on, also one set up before its profile had them; a file the game has not written yet waits for its first run
-            cfg = profiles.game_cfg(appid)
+            cfg = self._game_cfg(appid)
             if cfg:
                 self.cfg.ensure(appid, scan.get("install_dir"), cfg, appid in running)
                 s3["game_cfg"] = self.cfg.status(appid)
@@ -913,7 +918,7 @@ class Plugin:
         if npu_on:
             res["launch_options"] = self.npu.enable(appid, res["launch_options"])
         self._sync_gamescope(appid, True, False)
-        cfg = profiles.game_cfg(appid)
+        cfg = self._game_cfg(appid)
         if cfg:
             self.cfg.enable(appid, res["status"]["scan"].get("install_dir"), cfg, appid in gameutil.running_appids())
         self.floor.enable(appid)
