@@ -71,5 +71,5 @@ The three feature branches are [`launcher-games`](https://github.com/indiesaudi/
 [`launcher-build/make_overlay.py`](launcher-build/make_overlay.py). GPL-3.0-only, like the plugin; see
 [LICENSING.md](LICENSING.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), unchanged from upstream.
 
-Problems with launcher games: comment on [pull request #3](https://github.com/zrprod9-cmyk/vela/pull/3). Anything else
+Problems with launcher games: open an issue [here](https://github.com/indiesaudi/vela-armada/issues). Anything else
 belongs [upstream](https://github.com/zrprod9-cmyk/vela/issues).
