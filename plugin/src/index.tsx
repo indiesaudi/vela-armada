@@ -175,6 +175,8 @@ function statusOf(gs: GameState): Status {
     return { dot: WAIT, text: t("st.waiting", { m: wantName }), sub: t("st.waitingSub", { what }) };
   }
   const model = runName(L.mode);
+  // a DirectX 11 game: SGSR 2 through OptiScaler's bridge is all that can run; no switch is coming (the hint says why)
+  if (L.api === "dx11" && L.mode === "sgsr2") return { dot: want === "sgsr2" ? GREEN : YELLOW, text: `${t("st.works")} · ${model} ${t("st.onGpu")}`, sub: sizes };
   if (L.mode && MODEL_NAME[L.mode] && want !== L.mode) return { dot: GREEN, text: t("st.switching", { from: model, to: wantName }), sub: sizes };
   if (L.mode === "fsr4" || L.mode === "fsr4fast") {
     const n = L.npu;
