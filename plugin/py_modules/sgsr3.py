@@ -1025,15 +1025,19 @@ _RX_FSR4 = re.compile(r"Vela FSR 4 VK: FSR ([\d.]+(?: Lite)?) VK INT8 context \d
 _DX11_SWAPCHAIN = "creating Dx11 swapchain"
 _DX11_SIGNS = ("NVSDK_NGX_D3D11_Init",)
 _DX12_SIGNS = ("NVSDK_NGX_D3D12_Init",)
+# the game created its DLSS feature on D3D11: OptiScaler's Dx11Upscaler made it (SGSR 2 on the D3D12 bridge). A DX12 game
+# never writes this line (Crysis Remastered under Heroic, report 2026-11-17: FSR 4 Fast picked, "switching" for ever)
+_DX11_BRIDGE = "NVSDK_NGX_D3D11_CreateFeature"
 # FSR 4's provider refused the game's output texture (ffx error 6 = output format; R9G9B9E5 is handled by the fork since
 # patch 0021, so a line now means another format)
 _RX_OUT_FORMAT = re.compile(r"ffxDispatch failed \(6\)|provider needs[^\n]*format")
 
 
 def run_api(text, created):
-    """"dx11" when the run used DirectX 11 and no upscaler of Vela's was created, else None."""
+    """"dx11" when the run used DirectX 11: no upscaler of Vela's was created, or the one created came through the game's
+    D3D11 feature (SGSR 2 on the bridge, whatever model was picked); else None."""
     if created:
-        return None
+        return "dx11" if _DX11_BRIDGE in text else None
     if _DX11_SWAPCHAIN in text:
         return "dx11"
     if any(k in text for k in _DX12_SIGNS):
