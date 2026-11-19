@@ -20,11 +20,12 @@ problems) read the [upstream README](https://github.com/zrprod9-cmyk/vela#readme
 2. **Added step.** In Desktop mode, open Konsole and run:
 
    ```sh
-   curl -fsSL https://github.com/indiesaudi/vela-armada/releases/download/v0.8.22-launcher-games/vela-launcher-games-0.8.22.tar.gz | tar xz -C /tmp && sh /tmp/vela-launcher-games/install.sh
+   curl -fsSL https://github.com/indiesaudi/vela-armada/releases/download/v0.8.22-launcher-games-2/vela-launcher-games-0.8.22.tar.gz | tar xz -C /tmp && sh /tmp/vela-launcher-games/install.sh
    ```
 
-   This puts seven changed plugin files (85 KB) over the installed Vela. It first checks that the installed Vela is a
-   stock 0.8.22 and changes nothing if it is not. The original files are kept in `~/vela-backup-launcher-games`.
+   This puts eight changed plugin files (89 KB) over the installed Vela. It first checks that the installed Vela is a
+   stock 0.8.22, or the earlier build of this add-on, and changes nothing if it is not. The original files are kept in
+   `~/vela-backup-launcher-games`. If you have the earlier build, run the same command: it updates in place.
 3. **Added step.** Reload Vela: Quick Access → Decky → gear → Plugins → Vela → **Reload**, or restart the handheld.
 
 ## Usage
@@ -46,6 +47,8 @@ What to expect:
   own shortcut.
 - **32-bit games** are reported as not supported.
 - **Unreal games** are switched to DirectX 12 through the game's own `Engine.ini` while Vela is on.
+- **A game that runs in DirectX 11** gets SGSR 2 whatever model is picked; the panel says so (build 2, from a tester's
+  report on [#3](https://github.com/zrprod9-cmyk/vela/pull/3)).
 
 ## Removal
 
